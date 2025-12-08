@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Plugo.IA • Sistema de Automação & IA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!--
+    Coloque o arquivo da logo na raiz do projeto como "plugo-logo.png"
+    ou ajuste o caminho abaixo em <img src="./plugo-logo.png" ...>
+  -->
+  <style>
+    :root {
+      --bg: #020617;
+      --card-bg: rgba(11, 15, 25, 0.96);
+      --accent1: #38bdf8;
+      --accent2: #6366f1;
+      --accent3: #a855f7;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --border-soft: rgba(148, 163, 184, 0.4);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at top, #0b1120 0, transparent 55%),
+        radial-gradient(circle at bottom, #000 0, #020617 60%);
+      color: var(--text-main);
+      font-family: var(--sans);
+    }
+
+    .shell {
+      max-width: 960px;
+      width: 100%;
+      border-radius: 28px;
+      padding: 2px;
+      background-image: linear-gradient(135deg, #0f172a, #1f2937);
+      box-shadow:
+        0 0 40px rgba(56, 189, 248, 0.3),
+        0 0 80px rgba(88, 28, 135, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .shell::before {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(56, 189, 248, 0.22), transparent 60%),
+        radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.28), transparent 60%);
+      opacity: 0.9;
+      pointer-events: none;
+      filter: blur(6px);
+    }
+
+    .inner {
+      position: relative;
+      z-index: 1;
+      background: radial-gradient(circle at top left, #020617, #020617 60%, #020617);
+      border-radius: 26px;
+      padding: 18px 18px 20px;
+      border: 1px solid rgba(31, 41, 55, 0.9);
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      font-size: 0.78rem;
+      color: #6b7280;
+    }
+
+    .top-bar-dots {
+      display: flex;
+      gap: 5px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #1f2937;
+    }
+
+    .dot.red { background: #f97373; }
+    .dot.amber { background: #facc15; }
+    .dot.green { background: #22c55e; }
+
+    .top-bar-right {
+      font-family: var(--mono);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Console / boot area */
+    .console {
+      background: radial-gradient(circle at top, #020617, #020617 65%, #020617);
+      border-radius: 18px;
+      border: 1px solid rgba(15, 23, 42, 0.95);
+      box-shadow: inset 0 0 20px rgba(15, 23, 42, 0.85);
+      padding: 14px 14px 12px;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: #9ca3af;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .console::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        transparent 0,
+        rgba(15, 23, 42, 0.5) 48%,
+        transparent 52%
+      );
+      background-size: 100% 3px;
+      mix-blend-mode: soft-light;
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    .console-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      color: #6b7280;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .console-body {
+      max-height: 220px;
+      overflow: hidden;
+    }
+
+    .line {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 2px;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .line.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .prompt {
+      color: #4ade80;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 7px;
+      background: #e5e7eb;
+      margin-left: 2px;
+      animation: blink 1s steps(1) infinite;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      50.01%, 100% { opacity: 0; }
+    }
+
+    /* Right / identity area */
+    .identity-card {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.98));
+      border-radius: 18px;
+      border: 1px solid rgba(31, 41, 55, 0.95);
+      padding: 14px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .identity-card::before {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background:
+        radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.16), transparent 60%),
+        radial-gradient(circle at 100% 100%, rgba(129, 140, 248, 0.28), transparent 55%);
+      opacity: 0.9;
+      pointer-events: none;
+      filter: blur(6px);
+    }
+
+    .identity-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .logo-wrapper {
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      background: radial-gradient(circle at 30% 0, #38bdf8, #6366f1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      box-shadow:
+        0 0 26px rgba(56, 189, 248, 0.6),
+        0 0 40px rgba(129, 140, 248, 0.8);
+    }
+
+    .logo-wrapper img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .brand-name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+    }
+
+    .brand-name span.dot {
+      color: #e5e7eb;
+    }
+
+    .brand-name span.ia {
+      background: linear-gradient(135deg, #38bdf8, #6366f1, #a855f7);
+      -webkit-background-clip: text;
+      color: transparent;
+      font-weight: 800;
+    }
+
+    .brand-slogan {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      max-width: 260px;
+    }
+
+    .divider {
+      height: 1px;
+      border-radius: 999px;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(148, 163, 184, 0.8),
+        transparent
+      );
+      margin: 8px 0 6px;
+    }
+
+    .label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: #60a5fa;
+      margin-bottom: 3px;
+    }
+
+    .contact-block p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .contact-block strong {
+      color: var(--text-main);
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
+
+    .pill {
+      padding: 5px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--border-soft);
+      font-size: 0.75rem;
+      color: #9ca3af;
+      backdrop-filter: blur(12px);
+      background: linear-gradient(
+        135deg,
+        rgba(15, 23, 42, 0.95),
+        rgba(15, 23, 42, 0.75)
+      );
+      white-space: nowrap;
+    }
+
+    .modules {
+      margin-top: 4px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: #a5b4fc;
+    }
+
+    .modules pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .cta-row {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn {
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 0.82rem;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background-image: linear-gradient(135deg, #38bdf8, #6366f1, #a855f7);
+      color: #020617;
+      font-weight: 600;
+      box-shadow:
+        0 0 20px rgba(56, 189, 248, 0.5),
+        0 0 40px rgba(129, 140, 248, 0.6);
+    }
+
+    .btn-secondary {
+      background: rgba(15, 23, 42, 0.96);
+      color: #e5e7eb;
+      border: 1px solid var(--border-soft);
+      backdrop-filter: blur(10px);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      opacity: 0.96;
+    }
+
+    .btn-primary:hover {
+      box-shadow:
+        0 0 26px rgba(56, 189, 248, 0.7),
+        0 0 52px rgba(129, 140, 248, 0.9);
+    }
+
+    .btn-secondary:hover {
+      box-shadow: 0 0 20px rgba(148, 163, 184, 0.7);
+    }
+
+    .btn-icon {
+      font-size: 1rem;
+    }
+
+    .footer {
+      margin-top: 9px;
+      font-size: 0.7rem;
+      color: #6b7280;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .footer span.highlight {
+      color: #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="inner">
+      <div class="top-bar">
+        <div class="top-bar-dots">
+          <span class="dot red"></span>
+          <span class="dot amber"></span>
+          <span class="dot green"></span>
+        </div>
+        <div class="top-bar-right">
+          PLUGO.IA • INTERFACE NEURAL DE AUTOMAÇÃO
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- LADO ESQUERDO: CONSOLE / SISTEMA -->
+        <section class="console" aria-label="Console de inicialização do sistema">
+          <div class="console-header">
+            <span>SISTEMA PLUGO.IA v1.0</span>
+            <span>canal: github/card-digital</span>
+          </div>
+          <div id="console-body" class="console-body">
+            <!-- linhas são preenchidas via JS -->
+          </div>
+        </section>
+
+        <!-- LADO DIREITO: IDENTIDADE / CONTATO -->
+        <section class="identity-card" aria-label="Identidade e contato da Plugo.IA">
+          <div class="identity-content">
+            <div class="logo-row">
+              <div class="logo-wrapper">
+                <img src="./plugo-logo.png" alt="Logo Plugo.IA" />
+              </div>
+              <div class="brand-text">
+                <div class="brand-name">
+                  <span>Plugo</span><span class="dot">.</span><span class="ia">IA</span>
+                </div>
+                <div class="brand-slogan">
+                  Infraestrutura de automação e IA para negócios reais.
+                </div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="contact-block" style="margin-bottom: 6px;">
+              <div class="label">Operador responsável</div>
+              <p>
+                <strong>Donovan Bitencourt</strong><br />
+                Engenheiro de Automação &amp; IA<br />
+                Sombrio – SC · Brasil
+              </p>
+            </div>
+
+            <div class="contact-block" style="margin-bottom: 4px;">
+              <div class="label">Canais de acesso</div>
+              <p>
+                WhatsApp: <strong>+55 (49) 99174-6304</strong><br />
+                E-mail: <strong>plugo.destravandocomia@gmail.com</strong><br />
+                Instagram:
+                <a href="https://www.instagram.com/plugo.ia/?utm_source=ig_web_button_share_sheet"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   style="color:#a5b4fc; text-decoration:none;">
+                  @plugo.ia
+                </a>
+              </p>
+            </div>
+
+            <div class="divider"></div>
+
+            <div>
+              <div class="label">Focos de atuação</div>
+              <div class="pill-row">
+                <span class="pill">Automação para WhatsApp</span>
+                <span class="pill">Engine n8n + APIs</span>
+                <span class="pill">IA para redes sociais</span>
+                <span class="pill">Gestão operacional / indústria</span>
+              </div>
+            </div>
+
+            <div class="modules">
+              <pre>[MÓDULOS ATIVOS]
+ ▸ ENGINE N8N + APIS INTEGRANDO-SE
+ ▸ IA PARA WHATSAPP
+ ▸ IA PARA REDES SOCIAIS
+ ▸ GESTÃO OPERACIONAL / INDÚSTRIA</pre>
+            </div>
+
+            <div class="cta-row">
+              <a
+                class="btn btn-primary"
+                href="https://wa.me/5549991746304?text=Oi%20Donovan%2C%20vim%20pelo%20card%20digital%20da%20Plugo.IA%20no%20GitHub%20e%20quero%20falar%20sobre%20automa%C3%A7%C3%A3o%20com%20IA."
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span class="btn-icon">💬</span>
+                Canal prioritário no WhatsApp
+              </a>
+
+              <a
+                class="btn btn-secondary"
+                href="https://www.instagram.com/plugo.ia/?utm_source=ig_web_button_share_sheet"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span class="btn-icon">📡</span>
+                Ver bastidores no Instagram
+              </a>
+            </div>
+
+            <div class="footer">
+              <span>© <span class="highlight">Plugo.IA</span> — automação destravando negócios com IA.</span>
+              <span>Interface híbrida: técnica + humana.</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Sequência de linhas do "console" – tom técnico + humano
+    const consoleLines = [
+      "> inicializando sistema plugo.ia...",
+      "> verificando ambiente: github / card-digital",
+      "> carregando módulos de automação (whatsapp, redes sociais, indústria)...",
+      "> conectando engine n8n + APIs integrando-se...",
+      "> status da IA: ONLINE",
+      "",
+      "[SISTEMA] bem-vindo à interface neural da plugo.ia.",
+      "[SISTEMA] detectei um operador humano interessado em autonomia operacional.",
+      "",
+      "[ANÁLISE INSTANTÂNEA]",
+      " • probabilidade de ganho com automação: ALTA",
+      " • complexidade das rotinas atuais: DESCONHECIDA",
+      " • potencial de IA aplicada ao seu negócio: ELEVADO",
+      "",
+      "[AÇÃO RECOMENDADA]",
+      " → abrir canal prioritário com donovan (whatsapp).",
+      " → descrever rapidamente o cenário atual do seu negócio.",
+      " → permitir que a plugo.ia proponha o primeiro fluxo de automação."
+    ];
+
+    const consoleBody = document.getElementById("console-body");
+
+    function addLine(text, delay) {
+      setTimeout(() => {
+        const line = document.createElement("div");
+        line.className = "line";
+        if (text.startsWith(">")) {
+          const promptSpan = document.createElement("span");
+          promptSpan.className = "prompt";
+          promptSpan.textContent = "root@plugo:~$";
+          const textSpan = document.createElement("span");
+          textSpan.textContent = " " + text.slice(1).trim();
+          line.appendChild(promptSpan);
+          line.appendChild(textSpan);
+        } else if (text === "") {
+          line.innerHTML = "&nbsp;";
+        } else {
+          const textSpan = document.createElement("span");
+          textSpan.textContent = text;
+          line.appendChild(textSpan);
+        }
+
+        consoleBody.appendChild(line);
+        // força scroll pro final
+        consoleBody.scrollTop = consoleBody.scrollHeight;
+
+        // animação
+        requestAnimationFrame(() => {
+          line.classList.add("visible");
+        });
+      }, delay);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      let delay = 200;
+      const step = 260;
+
+      consoleLines.forEach((text) => {
+        addLine(text, delay);
+        delay += step;
+      });
+
+      // linha final com cursor piscando
+      setTimeout(() => {
+        const last = document.createElement("div");
+        last.className = "line visible";
+        last.innerHTML = '<span class="prompt">root@plugo:~$</span><span> aguardando seu próximo comando</span><span class="cursor"></span>';
+        consoleBody.appendChild(last);
+        consoleBody.scrollTop = consoleBody.scrollHeight;
+      }, delay + 200);
+    });
+  </script>
+</body>
+</html>
